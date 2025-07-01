@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'placeorder_screen.dart';
 
@@ -14,6 +13,8 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   final supabase = Supabase.instance.client;
   List<dynamic> orders = [];
+  List<bool> selected = [];
+  List<int> quantity = [];
   bool isLoading = true;
   String? address;
   String? phone;
@@ -43,19 +44,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     setState(() {
       orders = orderResponse;
+      selected = List<bool>.filled(orders.length, true);
+      quantity = List<int>.filled(orders.length, 1);
       address = profileResponse['address'] ?? '-';
       phone = profileResponse['phone_number'] ?? '-';
       isLoading = false;
     });
   }
 
+  double calculateTotal() {
+    double total = 0;
+    for (int i = 0; i < orders.length; i++) {
+      if (selected[i]) {
+        final rawPrice = orders[i]['product_price']
+            .toString()
+            .replaceAll('Rp', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '');
+        final price = double.tryParse(rawPrice) ?? 0;
+        total += price * quantity[i];
+      }
+    }
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
-    double totalPrice = 0;
-    for (var order in orders) {
-      final price = double.tryParse(order['product_price'].toString()) ?? 0;
-      totalPrice += price;
-    }
+    final totalPrice = calculateTotal();
 
     return Scaffold(
       appBar: AppBar(
@@ -76,7 +91,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Alamat Pengiriman
                     const Text(
                       "Delivery Address",
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -97,8 +111,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Daftar Produk
                     const Text(
                       "Shopping List",
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -113,70 +125,125 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: Padding(
                               padding: const EdgeInsets.all(12),
-                              child: Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Image.network(
-                                    item['product_image'] ?? '',
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (_, __, ___) => const Icon(Icons.image),
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                        value: selected[index],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            selected[index] = value!;
+                                          });
+                                        },
+                                      ),
+                                      Expanded(
+                                        child: Row(
+                                          children: [
+                                            Image.network(
+                                              item['product_image'] ?? '',
+                                              width: 80,
+                                              height: 80,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (_, __, ___) =>
+                                                      const Icon(Icons.image),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    item['product_title'] ?? '',
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  const Text(
+                                                    "Variations: Default",
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  const Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.star,
+                                                        color: Colors.orange,
+                                                        size: 16,
+                                                      ),
+                                                      Text(
+                                                        "4.7",
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        "Rp${item['product_price']}",
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      const Text(
+                                                        "Rp999.000",
+                                                        style: TextStyle(
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .lineThrough,
+                                                          color: Colors.grey,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item['product_title'] ?? '',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.remove_circle_outline,
                                         ),
-                                        const SizedBox(height: 4),
-                                        const Text(
-                                          "Variations: Default",
-                                          style: TextStyle(fontSize: 12),
+                                        onPressed: () {
+                                          setState(() {
+                                            if (quantity[index] > 1)
+                                              quantity[index]--;
+                                          });
+                                        },
+                                      ),
+                                      Text(quantity[index].toString()),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.add_circle_outline,
                                         ),
-                                        const SizedBox(height: 4),
-                                        const Row(
-                                          children: [
-                                            Icon(
-                                              Icons.star,
-                                              color: Colors.orange,
-                                              size: 16,
-                                            ),
-                                            Text(
-                                              "4.7",
-                                              style: TextStyle(fontSize: 12),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              "Rp${item['product_price']}",
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            const Text(
-                                              "Rp999.000",
-                                              style: TextStyle(
-                                                decoration:
-                                                    TextDecoration.lineThrough,
-                                                color: Colors.grey,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                        onPressed: () {
+                                          setState(() {
+                                            quantity[index]++;
+                                          });
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -185,7 +252,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         },
                       ),
                     ),
-
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -209,14 +275,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.all(14),
                         ),
-                        onPressed: () {
-                          Get.to(() => const PlaceOrderScreen());
-                        },
+                        onPressed:
+                            totalPrice == 0
+                                ? null
+                                : () {
+                                  Get.to(() => const PlaceOrderScreen());
+                                },
                       ),
                     ),
                   ],
                 ),
               ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1,
+        selectedItemColor: Colors.purple,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: "Checkout",
+          ),
+        ],
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pop(context);
+          }
+        },
+      ),
     );
   }
 }
