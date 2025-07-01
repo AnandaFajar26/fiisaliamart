@@ -1,3 +1,4 @@
+import 'package:fiisaliamart/halamanadmin/admin_login.dart';
 import 'package:flutter/material.dart';
 import 'package:get/route_manager.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -241,7 +242,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     const SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: () {
-                        Get.to(() => ());
+                        Get.to(() => AdminLoginScreen());
                       },
                       child: const Text("LOGIN ADMIN"),
                     ),
