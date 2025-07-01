@@ -205,7 +205,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.payment),
-                        label: const Text("Bayar Sekarang"),
+                        label: const Text("Bayar Sekarang juga"),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.all(14),
                         ),
