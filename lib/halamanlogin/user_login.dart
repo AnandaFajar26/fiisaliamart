@@ -139,13 +139,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                const Center(
-                  child: Text(
-                    "- OR Continue with -",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
                 const SizedBox(height: 32),
                 Center(
                   child: GestureDetector(
