@@ -34,7 +34,24 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> addToCheckout(Map<String, dynamic> product) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
 
+    await Supabase.instance.client.from('orders').insert({
+      'user_id': user.id,
+      'product_title': product['title'],
+      'product_price': product['price'],
+      'product_image': product['image_url'],
+      'status': 'pending',
+      'created_at': DateTime.now().toIso8601String(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Produk ditambahkan ke Checkout')),
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
