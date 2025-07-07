@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'user_register.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
 
-      Get.offAll(() => HomeScreen());
+      Get.offAll(() => ());
     } on AuthException catch (e) {
       Get.snackbar(
         "Login Gagal",
