@@ -145,32 +145,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(color: Colors.grey),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.grey.shade200,
-                      child: const Icon(
-                        Icons.g_mobiledata,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.grey.shade200,
-                      child: const Icon(Icons.apple, color: Colors.black87),
-                    ),
-                    const SizedBox(width: 16),
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.grey.shade200,
-                      child: const Icon(Icons.facebook, color: Colors.black87),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 32),
                 Center(
                   child: GestureDetector(
