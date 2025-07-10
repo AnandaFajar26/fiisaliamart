@@ -1,42 +1,68 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
-class HalamanUpload extends StatefulWidget {
-  const HalamanUpload({super.key});
+class UploadProdukPage extends StatefulWidget {
+  const UploadProdukPage({super.key});
 
   @override
-  State<HalamanUpload> createState() => _HalamanUploadState();
+  State<UploadProdukPage> createState() => _UploadProdukPageState();
 }
 
-class _HalamanUploadState extends State<HalamanUpload> {
-  final TextEditingController titleC = TextEditingController();
-  final TextEditingController priceC = TextEditingController();
-  final TextEditingController oldPriceC = TextEditingController();
-  final TextEditingController descriptionC = TextEditingController();
-  final TextEditingController imageUrlC = TextEditingController();
+class _UploadProdukPageState extends State<UploadProdukPage> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _oldPriceController = TextEditingController();
+  File? _imageFile;
 
+  final picker = ImagePicker();
   final supabase = Supabase.instance.client;
 
-  Future<void> uploadProduk() async {
-    final user = supabase.auth.currentUser;
+  Future<void> _pickImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
 
-    if (user == null) return;
+  Future<void> _uploadProduk() async {
+    final user = supabase.auth.currentUser;
+    if (user == null || _imageFile == null) return;
+
+    final fileName = const Uuid().v4();
+    final storageResponse = await supabase.storage
+        .from('produk-images') // pastikan sudah buat bucket 'produk-images'
+        .upload('public/$fileName.jpg', _imageFile!);
+
+    final imageUrl = supabase.storage
+        .from('produk-images')
+        .getPublicUrl('public/$fileName.jpg');
 
     await supabase.from('products').insert({
-      'title': titleC.text,
-      'price': priceC.text,
-      'old_price': oldPriceC.text,
-      'description': descriptionC.text,
-      'image_url': imageUrlC.text,
+      'title': _titleController.text,
+      'description': _descriptionController.text,
+      'price': _priceController.text,
+      'old_price': _oldPriceController.text,
+      'image_url': imageUrl,
       'admin_id': user.id,
     });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Produk berhasil diupload!')),
-      );
-      Navigator.pop(context); // kembali ke halaman produk
-    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Produk berhasil diunggah")));
+
+    _titleController.clear();
+    _descriptionController.clear();
+    _priceController.clear();
+    _oldPriceController.clear();
+    setState(() {
+      _imageFile = null;
+    });
   }
 
   @override
@@ -45,39 +71,43 @@ class _HalamanUploadState extends State<HalamanUpload> {
       appBar: AppBar(title: const Text("Upload Produk")),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: titleC,
-                decoration: const InputDecoration(labelText: 'Nama Produk'),
+        child: ListView(
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Nama Produk'),
+            ),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Deskripsi'),
+            ),
+            TextField(
+              controller: _priceController,
+              decoration: const InputDecoration(labelText: 'Harga'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _oldPriceController,
+              decoration: const InputDecoration(labelText: 'Harga Sebelumnya'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.image),
+              label: const Text('Pilih Gambar'),
+            ),
+            if (_imageFile != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Image.file(_imageFile!, height: 150),
               ),
-              TextField(
-                controller: priceC,
-                decoration: const InputDecoration(labelText: 'Harga'),
-              ),
-              TextField(
-                controller: oldPriceC,
-                decoration: const InputDecoration(
-                  labelText: 'Harga Sebelumnya',
-                ),
-              ),
-              TextField(
-                controller: descriptionC,
-                decoration: const InputDecoration(labelText: 'Deskripsi'),
-              ),
-              TextField(
-                controller: imageUrlC,
-                decoration: const InputDecoration(labelText: 'URL Gambar'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: uploadProduk,
-                icon: const Icon(Icons.upload),
-                label: const Text("Upload Produk"),
-              ),
-            ],
-          ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _uploadProduk,
+              child: const Text('Upload Produk'),
+            ),
+          ],
         ),
       ),
     );
