@@ -12,7 +12,7 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   final supabase = Supabase.instance.client;
-  List<dynamic> orders = [];
+  List<Map<String, dynamic>> mergedOrders = [];
   List<bool> selected = [];
   List<int> quantity = [];
   bool isLoading = true;
@@ -42,10 +42,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
             .eq('id', user.id)
             .single();
 
+    // Gabungkan item berdasarkan product_id
+    Map<String, Map<String, dynamic>> grouped = {};
+    for (var item in orderResponse) {
+      final productId = item['product_id'];
+      final key = productId ?? item['product_title'];
+
+      if (!grouped.containsKey(key)) {
+        grouped[key] = {...item, 'quantity': 1};
+      } else {
+        grouped[key]!['quantity'] += 1;
+      }
+    }
+
     setState(() {
-      orders = orderResponse;
-      selected = List<bool>.filled(orders.length, true);
-      quantity = List<int>.filled(orders.length, 1);
+      mergedOrders = grouped.values.toList();
+      selected = List<bool>.filled(mergedOrders.length, true);
+      quantity =
+          mergedOrders.map<int>((item) => item['quantity'] ?? 1).toList();
       address = profileResponse['address'] ?? '-';
       phone = profileResponse['phone_number'] ?? '-';
       isLoading = false;
@@ -54,9 +68,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   double calculateTotal() {
     double total = 0;
-    for (int i = 0; i < orders.length; i++) {
+    for (int i = 0; i < mergedOrders.length; i++) {
       if (selected[i]) {
-        final rawPrice = orders[i]['product_price']
+        final rawPrice = mergedOrders[i]['product_price']
             .toString()
             .replaceAll('Rp', '')
             .replaceAll('.', '')
@@ -118,9 +132,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     const SizedBox(height: 10),
                     Expanded(
                       child: ListView.builder(
-                        itemCount: orders.length,
+                        itemCount: mergedOrders.length,
                         itemBuilder: (_, index) {
-                          final item = orders[index];
+                          final item = mergedOrders[index];
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: Padding(
@@ -279,7 +293,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             totalPrice == 0
                                 ? null
                                 : () {
-                                  Get.to(() => const PlaceOrderScreen());
+                                  Get.to(
+                                    () => PlaceOrderScreen(
+                                      selectedOrders: [
+                                        for (
+                                          int i = 0;
+                                          i < mergedOrders.length;
+                                          i++
+                                        )
+                                          if (selected[i])
+                                            {
+                                              ...mergedOrders[i],
+                                              'quantity': quantity[i],
+                                            },
+                                      ],
+                                      quantities: quantity,
+                                    ),
+                                  );
                                 },
                       ),
                     ),
