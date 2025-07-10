@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../halaman-checkout/checkout_screen.dart';
-import '../profil/profil_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,18 +38,33 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    await Supabase.instance.client.from('orders').insert({
-      'user_id': user.id,
-      'product_title': product['title'],
-      'product_price': product['price'],
-      'product_image': product['image_url'],
-      'status': 'pending',
-      'created_at': DateTime.now().toIso8601String(),
-    });
+    if (product['id'] == null || product['admin_id'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data produk tidak lengkap')),
+      );
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Produk ditambahkan ke Checkout')),
-    );
+    try {
+      await Supabase.instance.client.from('orders').insert({
+        'user_id': user.id,
+        'product_id': product['id'], // pastikan kolom ini ada
+        'admin_id': product['admin_id'], // ini juga harus ada
+        'product_title': product['title'],
+        'product_price': product['price'],
+        'product_image': product['image_url'],
+        'status': 'pending',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Produk ditambahkan ke Checkout')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menambahkan ke Checkout: $e')),
+      );
+    }
   }
 
   @override
@@ -156,9 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         Image.asset(
                           "assets/shopping_girl.png",
                           height: 100,
-                          errorBuilder: (_, __, ___) {
-                            return const Icon(Icons.image_not_supported);
-                          },
+                          errorBuilder:
+                              (_, __, ___) =>
+                                  const Icon(Icons.image_not_supported),
                         ),
                       ],
                     ),
