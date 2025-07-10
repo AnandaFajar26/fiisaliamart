@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'halaman_produk.dart';
-import 'halaman_profil.dart';
+import 'halaman_pesanan.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -116,9 +116,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         );
       case 1:
-        return HalamanProduk();
+        return HalamanProdukAdmin();
       case 2:
-        return HalamanProfil();
+        return HalamanPemesananAdmin();
       default:
         return Container();
     }
