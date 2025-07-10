@@ -45,25 +45,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       for (int i = 0; i < widget.selectedOrders.length; i++) {
         final item = widget.selectedOrders[i];
+        final productId = item['product_id'];
+        final qty = item['quantity'] ?? 1;
 
-        // Validasi wajib
-        if (item['product_id'] == null || item['admin_id'] == null) {
-          Get.snackbar(
-            "Error",
-            "Data produk tidak lengkap pada item ke-${i + 1}",
-          );
+        if (productId == null) {
+          Get.snackbar("Error", "Product ID kosong pada item ke-${i + 1}");
           return;
         }
 
-        final rawPrice = item['product_price'].toString();
+        // Ambil data produk langsung dari Supabase
+        final product =
+            await supabase
+                .from('products')
+                .select('price, admin_id')
+                .eq('id', productId)
+                .single();
+
+        final rawPrice = product['price'].toString();
         final price =
             int.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-        final qty = item['quantity'] ?? 1;
+
+        final adminId = product['admin_id'];
 
         await supabase.from('placed_orders').insert({
           'user_id': userId,
-          'product_id': item['product_id'],
-          'admin_id': item['admin_id'],
+          'product_id': productId,
+          'admin_id': adminId,
           'quantity': qty,
           'total_price': price * qty,
           'payment_method': selectedMethod,
@@ -72,7 +79,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         });
       }
 
-      // Jika sukses
       Get.defaultDialog(
         title: "Berhasil",
         middleText: "Pesanan berhasil dibuat!",
@@ -97,7 +103,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Order Summary",
+              "Ringkasan Pesanan",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -110,19 +116,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text("Shipping"), Text("Rp0")],
+              children: [Text("Pengiriman"), Text("Rp0")],
             ),
             const Divider(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Total",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+              children: const [
+                Text("Total", style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(
-                  "Rp${widget.totalPrice.toStringAsFixed(0)}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  "Lihat detail saat pesanan berhasil dibuat",
+                  style: TextStyle(fontStyle: FontStyle.italic),
                 ),
               ],
             ),
