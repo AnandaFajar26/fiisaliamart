@@ -1,81 +1,99 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
+import 'dart:typed_data';
+import 'dart:html' as html; // WAJIB untuk Flutter Web
 
-class UploadProdukPage extends StatefulWidget {
-  const UploadProdukPage({super.key});
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class UploadProdukAdmin extends StatefulWidget {
+  const UploadProdukAdmin({super.key});
 
   @override
-  State<UploadProdukPage> createState() => _UploadProdukPageState();
+  State<UploadProdukAdmin> createState() => _UploadProdukAdminState();
 }
 
-class _UploadProdukPageState extends State<UploadProdukPage> {
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _oldPriceController = TextEditingController();
-  File? _imageFile;
-
-  final picker = ImagePicker();
+class _UploadProdukAdminState extends State<UploadProdukAdmin> {
   final supabase = Supabase.instance.client;
 
-  Future<void> _pickImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
+  final _namaController = TextEditingController();
+  final _hargaController = TextEditingController();
+  final _deskripsiController = TextEditingController();
+  final _hargaLamaController = TextEditingController();
+
+  String? imageUrl;
+
+  void _pilihGambar() async {
+    final input = html.FileUploadInputElement()..accept = 'image/*';
+    input.click();
+
+    input.onChange.listen((event) async {
+      final file = input.files!.first;
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+      await reader.onLoad.first;
+
+      final bytes = reader.result as Uint8List;
+      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+
+      try {
+        // Upload gambar
+        await supabase.storage
+            .from('produk')
+            .uploadBinary('images/$fileName.jpg', bytes);
+
+        // Ambil URL publik
+        final url = supabase.storage
+            .from('produk')
+            .getPublicUrl('images/$fileName.jpg');
+
+        setState(() => imageUrl = url);
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal upload gambar: $e")));
+      }
+    });
   }
 
-  Future<void> _uploadProduk() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+  void _uploadProduk() async {
+    final nama = _namaController.text.trim();
+    final harga = _hargaController.text.trim();
+    final deskripsi = _deskripsiController.text.trim();
+    final hargaLama = _hargaLamaController.text.trim();
+    final adminId = supabase.auth.currentUser?.id;
 
-    final fileName = const Uuid().v4();
+    if (nama.isEmpty ||
+        harga.isEmpty ||
+        deskripsi.isEmpty ||
+        imageUrl == null ||
+        adminId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Semua data (kecuali harga lama) wajib diisi"),
+        ),
+      );
+      return;
+    }
 
     try {
-      // Upload gambar terlebih dahulu
-      await supabase.storage
-          .from('produk-images')
-          .upload(
-            'public/$fileName.jpg',
-            _imageFile!,
-            fileOptions: const FileOptions(contentType: 'image/jpeg'),
-          );
-
-      final imageUrl = supabase.storage
-          .from('produk-images')
-          .getPublicUrl('public/$fileName.jpg');
-
-      // Simpan produk ke database
       await supabase.from('products').insert({
-        'title': _titleController.text,
-        'description': _descriptionController.text,
-        'price': _priceController.text,
-        'old_price': _oldPriceController.text,
+        'title': nama,
+        'price': harga,
+        'description': deskripsi,
+        'old_price': hargaLama.isEmpty ? null : hargaLama,
         'image_url': imageUrl,
-        'admin_id': user.id,
+        'admin_id': adminId,
       });
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Produk berhasil diunggah")));
-
-      // Reset form
-      _titleController.clear();
-      _descriptionController.clear();
-      _priceController.clear();
-      _oldPriceController.clear();
-      setState(() {
-        _imageFile = null;
-      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Produk berhasil diunggah")),
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Gagal upload: $e")));
+      ).showSnackBar(SnackBar(content: Text("Gagal unggah produk: $e")));
     }
   }
 
@@ -88,38 +106,28 @@ class _UploadProdukPageState extends State<UploadProdukPage> {
         child: ListView(
           children: [
             TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Nama Produk'),
+              controller: _namaController,
+              decoration: const InputDecoration(labelText: "Nama Produk"),
             ),
             TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Deskripsi'),
-            ),
-            TextField(
-              controller: _priceController,
-              decoration: const InputDecoration(labelText: 'Harga'),
+              controller: _hargaController,
+              decoration: const InputDecoration(labelText: "Harga"),
               keyboardType: TextInputType.number,
             ),
             TextField(
-              controller: _oldPriceController,
-              decoration: const InputDecoration(labelText: 'Harga Sebelumnya'),
-              keyboardType: TextInputType.number,
+              controller: _deskripsiController,
+              decoration: const InputDecoration(labelText: "Deskripsi"),
+              maxLines: 3,
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.image),
-              label: const Text('Pilih Gambar'),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _pilihGambar,
+              child: const Text("Pilih Gambar"),
             ),
-            if (_imageFile != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Image.file(_imageFile!, height: 150),
-              ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _uploadProduk,
-              child: const Text('Upload Produk'),
+              child: const Text("Upload"),
             ),
           ],
         ),
