@@ -32,37 +32,51 @@ class _UploadProdukPageState extends State<UploadProdukPage> {
 
   Future<void> _uploadProduk() async {
     final user = supabase.auth.currentUser;
-    if (user == null || _imageFile == null) return;
+    if (user == null) return;
 
     final fileName = const Uuid().v4();
-    final storageResponse = await supabase.storage
-        .from('produk-images') // pastikan sudah buat bucket 'produk-images'
-        .upload('public/$fileName.jpg', _imageFile!);
 
-    final imageUrl = supabase.storage
-        .from('produk-images')
-        .getPublicUrl('public/$fileName.jpg');
+    try {
+      // Upload gambar terlebih dahulu
+      await supabase.storage
+          .from('produk-images')
+          .upload(
+            'public/$fileName.jpg',
+            _imageFile!,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
 
-    await supabase.from('products').insert({
-      'title': _titleController.text,
-      'description': _descriptionController.text,
-      'price': _priceController.text,
-      'old_price': _oldPriceController.text,
-      'image_url': imageUrl,
-      'admin_id': user.id,
-    });
+      final imageUrl = supabase.storage
+          .from('produk-images')
+          .getPublicUrl('public/$fileName.jpg');
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Produk berhasil diunggah")));
+      // Simpan produk ke database
+      await supabase.from('products').insert({
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'price': _priceController.text,
+        'old_price': _oldPriceController.text,
+        'image_url': imageUrl,
+        'admin_id': user.id,
+      });
 
-    _titleController.clear();
-    _descriptionController.clear();
-    _priceController.clear();
-    _oldPriceController.clear();
-    setState(() {
-      _imageFile = null;
-    });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Produk berhasil diunggah")));
+
+      // Reset form
+      _titleController.clear();
+      _descriptionController.clear();
+      _priceController.clear();
+      _oldPriceController.clear();
+      setState(() {
+        _imageFile = null;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal upload: $e")));
+    }
   }
 
   @override
