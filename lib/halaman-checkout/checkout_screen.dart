@@ -4,13 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'placeorder_screen.dart';
 
 class CheckoutPage extends StatefulWidget {
-  const CheckoutPage({super.key});
+  const CheckoutPage({Key? key}) : super(key: key);
 
   @override
-  State<CheckoutPage> createState() => _CheckoutPageState();
+  CheckoutPageState createState() => CheckoutPageState();
 }
 
-class _CheckoutPageState extends State<CheckoutPage> {
+class CheckoutPageState extends State<CheckoutPage> {
   final supabase = Supabase.instance.client;
   List<Map<String, dynamic>> mergedOrders = [];
   List<bool> selected = [];
@@ -26,6 +26,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Future<void> fetchOrders() async {
+    setState(() {
+      isLoading = true;
+    });
+
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -40,18 +44,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
             .from('profiles')
             .select('address, phone_number')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
-    // Gabungkan item berdasarkan product_id
+    // Gabungkan berdasarkan product_id
     Map<String, Map<String, dynamic>> grouped = {};
     for (var item in orderResponse) {
       final productId = item['product_id'];
       final key = productId ?? item['product_title'];
 
       if (!grouped.containsKey(key)) {
-        grouped[key] = {...item, 'quantity': 1};
+        grouped[key] = {
+          ...item,
+          'quantity': 1,
+          'all_ids': [item['id']],
+        };
       } else {
         grouped[key]!['quantity'] += 1;
+        grouped[key]!['all_ids'].add(item['id']);
       }
     }
 
@@ -60,22 +69,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
       selected = List<bool>.filled(mergedOrders.length, true);
       quantity =
           mergedOrders.map<int>((item) => item['quantity'] ?? 1).toList();
-      address = profileResponse['address'] ?? '-';
-      phone = profileResponse['phone_number'] ?? '-';
+      address = profileResponse?['address'] ?? '-';
+      phone = profileResponse?['phone_number'] ?? '-';
       isLoading = false;
     });
+  }
+
+  Future<void> deleteProductFromCheckout(List orderIds) async {
+    await supabase.from('orders').delete().inFilter('id', orderIds);
+    await fetchOrders();
   }
 
   double calculateTotal() {
     double total = 0;
     for (int i = 0; i < mergedOrders.length; i++) {
       if (selected[i]) {
-        final rawPrice = mergedOrders[i]['product_price']
-            .toString()
-            .replaceAll('Rp', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '');
-        final price = double.tryParse(rawPrice) ?? 0;
+        final price =
+            double.tryParse(mergedOrders[i]['product_price'].toString()) ?? 0;
         total += price * quantity[i];
       }
     }
@@ -92,10 +102,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
         backgroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body:
           isLoading
@@ -184,15 +190,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                                       fontSize: 12,
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 4),
-                                                  const Row(
+                                                  Row(
                                                     children: [
-                                                      Icon(
+                                                      const Icon(
                                                         Icons.star,
                                                         color: Colors.orange,
                                                         size: 16,
                                                       ),
-                                                      Text(
+                                                      const Text(
                                                         "4.7",
                                                         style: TextStyle(
                                                           fontSize: 12,
@@ -200,7 +205,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                                       ),
                                                     ],
                                                   ),
-                                                  const SizedBox(height: 4),
                                                   Row(
                                                     children: [
                                                       Text(
@@ -225,6 +229,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                                   ),
                                                 ],
                                               ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                              ),
+                                              onPressed:
+                                                  () =>
+                                                      deleteProductFromCheckout(
+                                                        item['all_ids'],
+                                                      ),
                                             ),
                                           ],
                                         ),
@@ -316,22 +331,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ],
                 ),
               ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        selectedItemColor: Colors.purple,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: "Checkout",
-          ),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pop(context);
-          }
-        },
-      ),
     );
   }
 }
