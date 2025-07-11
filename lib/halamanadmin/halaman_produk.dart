@@ -17,7 +17,7 @@ class _HalamanProdukAdminState extends State<HalamanProdukAdmin> {
     final res = await supabase
         .from('products')
         .select('*')
-        .eq('admin_id', adminId)
+        .eq('admin_id', adminId ?? '')
         .order('created_at', ascending: false);
 
     return List<Map<String, dynamic>>.from(res);
