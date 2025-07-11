@@ -2,8 +2,8 @@ import 'package:fiisaliamart/profil/profil_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../tampilanawal.dart/checkout_screen.dart';
-import '../tampilanawal.dart/profil_screen.dart';
+
+import '../halaman-checkout/checkout_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
