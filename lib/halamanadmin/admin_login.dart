@@ -20,7 +20,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-
   Future<void> _signIn() async {
     if (!mounted) return;
     setState(() {
@@ -44,7 +43,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
         if (adminProfileResponse != null) {
           if (mounted) {
-            Get.offAll(() => const AdminDashboard());
+            Get.offAll(() => const HalamanUtamaAdmin());
           }
         } else {
           await supabase.auth.signOut();
@@ -90,7 +89,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -143,16 +141,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    Get.to(() => const ());
-                  },
-                  child: const Text('Forgot Password?'),
-                ),
-              ),
-              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -209,7 +197,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       ),
     );
   }
-
 
   Widget _buildSocialButton({
     required Color color,
