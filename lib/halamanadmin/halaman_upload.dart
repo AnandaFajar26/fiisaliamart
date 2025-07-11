@@ -1,8 +1,10 @@
+import 'dart:io' if (dart.library.html) 'dart:html' as html; // Conditional import
 import 'dart:typed_data';
-import 'dart:html' as html; // WAJIB untuk Flutter Web
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart'; // Import image_picker
 
 class UploadProdukAdmin extends StatefulWidget {
   const UploadProdukAdmin({super.key});
@@ -20,38 +22,43 @@ class _UploadProdukAdminState extends State<UploadProdukAdmin> {
   final _hargaLamaController = TextEditingController();
 
   String? imageUrl;
+  Uint8List? _imageBytes; // To store image bytes for upload
 
-  void _pilihGambar() async {
-    final input = html.FileUploadInputElement()..accept = 'image/*';
-    input.click();
+  Future<void> _pilihGambar() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
-    input.onChange.listen((event) async {
-      final file = input.files!.first;
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(file);
-      await reader.onLoad.first;
-
-      final bytes = reader.result as Uint8List;
+    if (image != null) {
+      if (kIsWeb) {
+        // For web, we can directly read bytes from XFile
+        _imageBytes = await image.readAsBytes();
+      } else {
+        // For mobile, we can also read bytes from XFile
+        _imageBytes = await image.readAsBytes();
+      }
+      
       final fileName = DateTime.now().millisecondsSinceEpoch.toString();
 
       try {
-        // Upload gambar
-        await supabase.storage
-            .from('produk')
-            .uploadBinary('images/$fileName.jpg', bytes);
+        if (_imageBytes != null) {
+          // Upload gambar
+          await supabase.storage
+              .from('produk')
+              .uploadBinary('images/$fileName.jpg', _imageBytes!);
 
-        // Ambil URL publik
-        final url = supabase.storage
-            .from('produk')
-            .getPublicUrl('images/$fileName.jpg');
+          // Ambil URL publik
+          final url = supabase.storage
+              .from('produk')
+              .getPublicUrl('images/$fileName.jpg');
 
-        setState(() => imageUrl = url);
+          setState(() => imageUrl = url);
+        }
       } catch (e) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Gagal upload gambar: $e")));
       }
-    });
+    }
   }
 
   void _uploadProduk() async {
@@ -124,6 +131,9 @@ class _UploadProdukAdminState extends State<UploadProdukAdmin> {
               onPressed: _pilihGambar,
               child: const Text("Pilih Gambar"),
             ),
+            const SizedBox(height: 12),
+            if (imageUrl != null) // Show preview if image is selected
+              Image.network(imageUrl!, height: 200),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _uploadProduk,

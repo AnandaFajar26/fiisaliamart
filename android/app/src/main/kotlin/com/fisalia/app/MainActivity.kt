@@ -1,4 +1,4 @@
-package com.new.fisalia
+package com.fisalia.app
 
 import io.flutter.embedding.android.FlutterActivity
 
