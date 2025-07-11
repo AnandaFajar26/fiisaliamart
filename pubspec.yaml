@@ -38,6 +38,7 @@ dependencies:
   supabase_flutter: ^1.10.15
   image_picker: ^1.0.4
   path: ^1.9.0
+  uuid: ^4.0.0
 
 dev_dependencies:
   flutter_test:
