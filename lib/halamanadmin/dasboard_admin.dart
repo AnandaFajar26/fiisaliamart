@@ -125,7 +125,7 @@ class _HalamanUtamaAdminState extends State<HalamanUtamaAdmin> {
                   IconButton(
                     icon: const Icon(Icons.person),
                     onPressed: () {
-                      Get.to(() => const ());
+                      Get.to(() => const HalamanProfilAdmin());
                     },
                   ),
                 ],
