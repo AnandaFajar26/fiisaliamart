@@ -85,7 +85,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         textConfirm: "OK",
         onConfirm: () {
           Get.back();
-          Get.offAllNamed('/');
+          Get.offAllNamed('/home'); // Ganti dengan rute yang sesuai
         },
       );
     } catch (e) {
