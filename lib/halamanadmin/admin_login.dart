@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'regist_admin.dart';
 import 'dasboard_admin.dart';
 
-// Inisialisasi Supabase client di luar class agar bisa diakses
 final supabase = Supabase.instance.client;
 
 class AdminLoginScreen extends StatefulWidget {
@@ -22,7 +20,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // --- ALGORITMA LOGIN (TIDAK DIUBAH) ---
+
   Future<void> _signIn() async {
     if (!mounted) return;
     setState(() {
@@ -92,9 +90,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-  // --- AKHIR DARI ALGORITMA LOGIN ---
 
-  // --- PERUBAHAN TAMPILAN DIMULAI DARI SINI ---
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,7 +174,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                               strokeWidth: 2,
                             ),
                           )
-                          // PERUBAHAN 1: Menambahkan style pada Text agar kontras
                           : const Text(
                             'Login',
                             style: TextStyle(
@@ -191,34 +187,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               const SizedBox(height: 20),
               const Center(child: Text('- Or Continue with -')),
               const SizedBox(height: 12),
-              // PERUBAHAN 2: Mengganti ikon sosial yang error
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildSocialButton(
-                    color: const Color(0xFFDB4437), // Warna Google
-                    icon: 'G',
-                    onTap: () {
-                      /* TODO: Logika login Google */
-                    },
-                  ),
-                  _buildSocialButton(
-                    color: const Color(0xFF4267B2), // Warna Facebook
-                    icon: 'f',
-                    onTap: () {
-                      /* TODO: Logika login Facebook */
-                    },
-                  ),
-                  _buildSocialButton(
-                    color: Colors.black, // Warna Twitter (X)
-                    icon: 'X',
-                    onTap: () {
-                      /* TODO: Logika login Twitter */
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -242,7 +210,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     );
   }
 
-  // Widget bantuan untuk membuat tombol ikon sosial agar tidak duplikat kode
+
   Widget _buildSocialButton({
     required Color color,
     required String icon,
